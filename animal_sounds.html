@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐾 動物叫聲挑戰</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; min-height: 100vh; padding: 1.5rem 1rem 3rem; }
+  .container { max-width: 700px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
+  .subtitle { font-size: 15px; color: #666; margin-bottom: 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .card { background: #fff; border: 2px solid #e5e5e5; border-radius: 14px; padding: 12px 8px; cursor: pointer; text-align: center; transition: border-color .2s, transform .15s, box-shadow .15s; user-select: none; }
+  .card:hover { border-color: #ccc; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+  .card.selected { border-color: #7F77DD; background: #f5f4ff; }
+  .card.correct { border-color: #1D9E75; background: #f0faf5; }
+  .card.wrong { border-color: #E24B4A; background: #fff5f5; }
+  .emoji { font-size: 36px; line-height: 1.2; display: block; margin-bottom: 5px; }
+  .animal-name { font-size: 13px; font-weight: 600; color: #222; }
+  .hint { font-size: 11px; color: #999; margin-top: 2px; }
+  .panel { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .placeholder { color: #aaa; font-size: 14px; text-align: center; padding: 1.5rem 0; }
+  .info-row { display: flex; align-items: center; gap: 14px; margin-bottom: 1.1rem; }
+  .big-emoji { font-size: 52px; line-height: 1; }
+  .detail h2 { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+  .detail p { font-size: 13px; color: #777; margin-top: 3px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .tag { background: #f0f0f0; border-radius: 20px; padding: 3px 10px; font-size: 12px; color: #555; }
+  .play-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #e0e0e0; background: #fafafa; color: #333; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 1rem; transition: background .15s, border-color .15s; }
+  .play-btn:hover { background: #f0efff; border-color: #7F77DD; }
+  .play-btn.playing { background: #f0efff; border-color: #7F77DD; color: #3C3489; }
+  .divider { height: 1px; background: #f0f0f0; margin: .9rem 0; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab { padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1.5px solid #e0e0e0; background: #fff; color: #666; font-weight: 500; transition: background .15s; }
+  .tab.active { background: #f0efff; border-color: #7F77DD; color: #3C3489; }
+  .type-area { display: flex; flex-direction: column; gap: 10px; }
+  .text-input { width: 100%; padding: 10px 14px; font-size: 15px; border: 1.5px solid #e0e0e0; border-radius: 10px; background: #fafafa; color: #1a1a1a; outline: none; transition: border-color .15s; }
+  .text-input:focus { border-color: #7F77DD; }
+  .submit-btn { padding: 10px 22px; border-radius: 10px; border: 1.5px solid #e0e0e0; background: #fff; color: #333; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .submit-btn:hover { background: #f5f5f5; }
+  .voice-area { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: .5rem 0; }
+  .mic-btn { width: 72px; height: 72px; border-radius: 50%; border: 2px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 28px; display: flex; align-items: center; justify-content: center; transition: background .2s, transform .1s; }
+  .mic-btn:hover { transform: scale(1.06); background: #f5f5f5; }
+  .mic-btn.recording { background: #fff5f5; border-color: #E24B4A; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)}50%{transform:scale(1.09)} }
+  .mic-status { font-size: 13px; color: #888; text-align: center; }
+  .result { border-radius: 12px; padding: 14px 16px; margin-top: .9rem; display: none; }
+  .result.show { display: block; }
+  .result-pass { background: #f0faf5; border: 1.5px solid #9bd4bf; }
+  .result-fail { background: #fff5f5; border: 1.5px solid #f0b0b0; }
+  .result-icon { font-size: 32px; display: block; text-align: center; margin-bottom: 5px; }
+  .result-text { font-size: 15px; color: #1a1a1a; text-align: center; font-weight: 600; }
+  .result-sub { font-size: 12px; color: #777; text-align: center; margin-top: 4px; }
+  .bar-wrap { height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .bar { height: 100%; border-radius: 4px; transition: width .5s ease; }
+  .bar-label { font-size: 11px; color: #888; text-align: right; }
+  .tip { font-size: 12px; color: #bbb; text-align: center; }
+  .source-note { font-size: 11px; color: #bbb; text-align: center; margin-top: 1.5rem; }
+  a { color: #888; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🐾 動物叫聲挑戰</h1>
+  <p class="subtitle">選動物 → 按 🔊 聽真實叫聲 → 輸入或錄音作答，看看相似度！</p>
+  <div class="grid" id="grid"></div>
+  <div class="panel" id="panel">
+    <div class="placeholder">👆 選一個動物開始挑戰</div>
+  </div>
+  <p class="source-note">音效來源：<a href="https://freesound.org" target="_blank">Freesound.org</a>（Creative Commons 授權）</p>
+</div>
+
+<script>
+// 使用 Freesound.org 的直接 MP3 連結（Creative Commons 授權）
+// 這些 URL 在普通瀏覽器裡可正常訪問（不在 iframe 沙盒限制內）
+const animals = [
+  { id:'dog',     name:'狗',   emoji:'🐶', hint:'汪汪',   url:'https://freesound.org/data/previews/397/397417_7255534-lq.mp3',   sounds:['汪汪','旺旺','woof','bow wow','汪','bark'] },
+  { id:'cat',     name:'貓',   emoji:'🐱', hint:'喵喵',   url:'https://freesound.org/data/previews/412/412017_5121236-lq.mp3',   sounds:['喵喵','喵','meow','miao','mew','nyaa'] },
+  { id:'cow',     name:'牛',   emoji:'🐮', hint:'哞哞',   url:'https://freesound.org/data/previews/568/568566_11918036-lq.mp3',  sounds:['哞','哞哞','moo','mo'] },
+  { id:'pig',     name:'豬',   emoji:'🐷', hint:'呼嚕',   url:'https://freesound.org/data/previews/421/421184_5121236-lq.mp3',   sounds:['呼嚕','嗯嗯','oink','噜噜'] },
+  { id:'duck',    name:'鴨',   emoji:'🦆', hint:'呱呱',   url:'https://freesound.org/data/previews/270/270329_5123851-lq.mp3',   sounds:['呱呱','呱','quack','嘎嘎','嘎'] },
+  { id:'frog',    name:'青蛙', emoji:'🐸', hint:'呱呱',   url:'https://freesound.org/data/previews/188/188040_2645492-lq.mp3',   sounds:['呱呱','呱','croak','ribbit','瓜瓜'] },
+  { id:'sheep',   name:'羊',   emoji:'🐑', hint:'咩咩',   url:'https://freesound.org/data/previews/414/414345_7255534-lq.mp3',   sounds:['咩咩','咩','baa','meh'] },
+  { id:'rooster', name:'公雞', emoji:'🐓', hint:'喔喔喔', url:'https://freesound.org/data/previews/441/441540_9337240-lq.mp3',   sounds:['喔喔','咕咕','cock','喔'] },
+  { id:'horse',   name:'馬',   emoji:'🐴', hint:'嘶嘶',   url:'https://freesound.org/data/previews/322/322443_5809422-lq.mp3',   sounds:['嘶嘶','咴','neigh','whinny','嘶'] },
+  { id:'lion',    name:'獅子', emoji:'🦁', hint:'吼吼',   url:'https://freesound.org/data/previews/316/316920_5385651-lq.mp3',   sounds:['吼吼','吼','roar','嗷嗷','嗷'] },
+];
+
+let sel = null, method = 'type', recognition = null, isRec = false;
+let currentAudio = null;
+
+function sim(a, b) {
+  a = a.toLowerCase().replace(/\s+/g,'').replace(/[！!。，,.？?]/g,'');
+  b = b.toLowerCase().replace(/\s+/g,'').replace(/[！!。，,.？?]/g,'');
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.92;
+  const lo = a.length > b.length ? a : b, sh = a.length > b.length ? b : a;
+  let m = 0;
+  for (let i = 0; i < sh.length; i++) if (lo.includes(sh[i])) m++;
+  return m / lo.length;
+}
+function bestScore(inp, an) {
+  let b = 0;
+  for (const s of an.sounds) { const v = sim(inp, s); if (v > b) b = v; }
+  return b;
+}
+
+function renderGrid() {
+  const g = document.getElementById('grid'); g.innerHTML = '';
+  animals.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'card'; d.dataset.id = a.id;
+    d.innerHTML = `<span class="emoji">${a.emoji}</span><div class="animal-name">${a.name}</div><div class="hint">${a.hint}</div>`;
+    d.onclick = () => pick(a.id);
+    g.appendChild(d);
+  });
+}
+
+function pick(id) {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  sel = animals.find(a => a.id === id);
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.remove('selected');
+    if (c.dataset.id === id) c.classList.add('selected');
+  });
+  render();
+}
+
+function render() {
+  const panel = document.getElementById('panel');
+  if (!sel) { panel.innerHTML = '<div class="placeholder">👆 選一個動物開始挑戰</div>'; return; }
+  const a = sel;
+  panel.innerHTML = `
+    <div class="info-row">
+      <div class="big-emoji">${a.emoji}</div>
+      <div class="detail">
+        <h2>${a.name}</h2>
+        <p>先聽真實叫聲，再來模仿！</p>
+        <div class="tags">${a.sounds.slice(0,4).map(s => `<span class="tag">${s}</span>`).join('')}</div>
+      </div>
+    </div>
+    <button class="play-btn" id="play-btn" onclick="playSound()">
+      <span id="play-icon">🔊</span><span id="play-label">試聽 ${a.name} 的真實叫聲</span>
+    </button>
+    <div class="divider"></div>
+    <div class="tabs">
+      <div class="tab ${method==='type'?'active':''}" onclick="switchM('type')">⌨️ 打字輸入</div>
+      <div class="tab ${method==='voice'?'active':''}" onclick="switchM('voice')">🎤 語音輸入</div>
+    </div>
+    ${method === 'type' ? `
+    <div class="type-area">
+      <input class="text-input" id="tinput" placeholder="請輸入${a.name}的叫聲…" maxlength="30" />
+      <button class="submit-btn" onclick="checkInput()">✅ 提交答案</button>
+    </div>` : `
+    <div class="voice-area">
+      <button class="mic-btn" id="mic-btn" onclick="toggleRec()">🎤</button>
+      <div class="mic-status" id="mic-status">點擊麥克風開始錄音</div>
+      <div class="tip">請大聲說出動物的叫聲</div>
+    </div>`}
+    <div class="result" id="result"></div>
+  `;
+  const inp = document.getElementById('tinput');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkInput(); });
+}
+
+function playSound() {
+  if (!sel) return;
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause(); currentAudio.currentTime = 0;
+    resetPlayBtn(); return;
+  }
+  const btn = document.getElementById('play-btn');
+  const icon = document.getElementById('play-icon');
+  const lbl = document.getElementById('play-label');
+  btn.classList.add('playing');
+  icon.textContent = '⏳'; lbl.textContent = '載入中…';
+
+  currentAudio = new Audio(sel.url);
+  currentAudio.oncanplaythrough = () => {
+    icon.textContent = '⏸'; lbl.textContent = '播放中… (再按停止)';
+    currentAudio.play().catch(() => {
+      icon.textContent = '⚠️'; lbl.textContent = '播放失敗，請確認網路';
+    });
+  };
+  currentAudio.onended = () => resetPlayBtn();
+  currentAudio.onerror = () => {
+    icon.textContent = '⚠️'; lbl.textContent = '無法載入音效，請確認網路連線';
+    btn.classList.remove('playing');
+  };
+}
+
+function resetPlayBtn() {
+  const btn = document.getElementById('play-btn');
+  const icon = document.getElementById('play-icon');
+  const lbl = document.getElementById('play-label');
+  if (btn) { btn.classList.remove('playing'); icon.textContent = '🔊'; lbl.textContent = `試聽 ${sel.name} 的真實叫聲`; }
+}
+
+function switchM(m) { method = m; render(); }
+
+function showResult(input) {
+  if (!sel || !input.trim()) return;
+  const pct = Math.round(bestScore(input, sel) * 100);
+  const pass = pct >= 80;
+  const box = document.getElementById('result');
+  box.className = 'result show ' + (pass ? 'result-pass' : 'result-fail');
+  box.innerHTML = `
+    <div class="bar-label">相似度 ${pct}%</div>
+    <div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${pass?'#1D9E75':'#E24B4A'}"></div></div>
+    <div class="result-icon">${pass ? '✅' : '❌'}</div>
+    <div class="result-text">${pass ? '答對了！太棒了 🎉' : '再試試看 😅'}</div>
+    <div class="result-sub">${pass ? `「${input}」非常像${sel.name}的叫聲！` : `「${input}」和${sel.name}差一點，提示：${sel.hint}`}</div>
+  `;
+  const card = document.querySelector(`.card[data-id="${sel.id}"]`);
+  if (card) { card.classList.remove('selected','correct','wrong'); card.classList.add(pass ? 'correct' : 'wrong'); }
+}
+
+function checkInput() {
+  const inp = document.getElementById('tinput');
+  if (!inp) return;
+  const v = inp.value.trim();
+  if (!v) { inp.focus(); return; }
+  showResult(v);
+}
+
+function toggleRec() {
+  if (isRec) { stopRec(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('mic-status').textContent = '瀏覽器不支援語音，請用打字'; return; }
+  recognition = new SR();
+  recognition.lang = 'zh-TW'; recognition.interimResults = false; recognition.maxAlternatives = 5;
+  recognition.onstart = () => { isRec = true; document.getElementById('mic-btn')?.classList.add('recording'); document.getElementById('mic-status').textContent = '錄音中…大聲說！'; };
+  recognition.onresult = (e) => { const t = e.results[0][0].transcript.trim(); document.getElementById('mic-status').textContent = `聽到：「${t}」`; showResult(t); stopRec(); };
+  recognition.onerror = (e) => { document.getElementById('mic-status').textContent = '識別失敗：' + e.error; stopRec(); };
+  recognition.onend = () => { isRec = false; document.getElementById('mic-btn')?.classList.remove('recording'); };
+  recognition.start();
+}
+function stopRec() { isRec = false; recognition && recognition.stop(); document.getElementById('mic-btn')?.classList.remove('recording'); }
+
+renderGrid();
+</script>
+</body>
+</html>
